@@ -3,3 +3,4 @@ google-cloud-vision
 rake-nltk
 googlesearch-python
 pytest
+gunicorn
