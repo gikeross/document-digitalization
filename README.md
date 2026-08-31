@@ -1,45 +1,74 @@
-# FINAL_PROJECT
+# Document Digitalization
 
-# Description:
-Image Digitalization is a project aimed at transforming handwritten notes into tidy texts using artificial intelligence. The project utilizes various technologies including Python, Java, HTML, and CSS to achieve its goal.
+A Flask-based web application that converts images of handwritten notes into structured digital text using Google Cloud Vision OCR. The application also extracts keywords from the recognized text and generates related search results.
 
-# Project Structure:
-The project is organized into different components:
+## Overview
 
-# Python Backend (Flask):
+The goal of this project is to make handwritten information easier to digitize, review, and explore. A user uploads an image through the web interface, and the backend processes it through an OCR and text-analysis pipeline.
 
-The Python backend, built using the Flask framework, serves as the core of the project.
-It utilizes several libraries and APIs to handle image processing tasks and backend functionalities.
-Key libraries used include:
-rake_nltk: Utilized for keyword extraction from the uploaded images. RAKE (Rapid Automatic Keyword Extraction) is a natural language processing algorithm used to identify and extract keywords from text.
-googlesearch: Employed to generate search results based on the extracted keywords. This library enables the application to perform Google searches and retrieve relevant links.
-google.cloud.vision_v1: Integrated to extract text from the uploaded images using Optical Character Recognition (OCR) technology. This library allows the application to analyze images and extract text content accurately.
-This addition provides clarity on the specific functionalities of each library and how they contribute to the image digitalization process in the Python backend.
+The application returns:
 
-# Java Functions:
+- extracted text from the uploaded image
+- OCR confidence scores at block and paragraph level
+- ranked keywords identified with RAKE
+- related web-search results based on the extracted keywords
 
-Java functions are utilized for specific tasks that require complex processing or integration with external libraries.
-For example, Java functions might be used for advanced image manipulation or machine learning tasks.
+## Tech Stack
 
-# HTML Templates:
+- **Python** — application logic and text-processing pipeline
+- **Flask** — web application and API endpoints
+- **Google Cloud Vision** — document text detection / OCR
+- **RAKE-NLTK** — keyword extraction
+- **googlesearch** — related search-result retrieval
+- **HTML / CSS** — user interface
 
-HTML templates are used to create the user interface (UI) for the web application.
-They define the layout and structure of the different pages where users interact with the application.
-Templates are rendered dynamically based on user actions and backend responses.
+## How It Works
 
-# CSS Styling:
+1. The user uploads an image containing handwritten or printed notes.
+2. Flask temporarily stores the uploaded file.
+3. Google Cloud Vision performs document text detection.
+4. The application calculates average OCR confidence scores.
+5. RAKE extracts and ranks relevant phrases from the recognized text.
+6. The extracted keywords are used to retrieve related search results.
+7. The processed information is returned to the frontend as JSON.
 
-CSS stylesheets are employed to style the HTML elements and enhance the visual appeal of the UI.
-They define the colors, fonts, layout, and other visual aspects of the web pages.
+## Project Structure
 
-# Usage:
-To run the Image Digitalization project locally, follow these steps:
+```text
+Document_digitalization/
+├── model.py               # Flask backend, OCR and keyword-processing logic
+├── templates/             # HTML templates
+├── static/                # Frontend assets and styling
+├── IMAGE_PRESENTATION/    # Presentation assets
+├── FINAL_project.pptx     # Project presentation
+└── README.md
+```
 
-Clone the GitHub repository to your local machine.
-Install the necessary dependencies for the Python backend using pip.
-Run the Flask application to start the backend server.
-Open the web application in your browser to access the UI.
-Upload an image containing handwritten notes to initiate the digitalization process.
-Explore the generated text, keywords, search results, and other outputs provided by the application.
-Conclusion:
-The Image Digitalization project demonstrates the power of artificial intelligence and web technologies in converting handwritten content into digital format. By leveraging Python for backend processing, Java for advanced tasks, and HTML/CSS for frontend presentation, the project offers a seamless user experience and valuable functionality for researchers, students, and anyone in need of digitizing handwritten notes. Further enhancements and integrations can be made to expand the capabilities and usability of the application.
+## Running the Project Locally
+
+Clone the repository:
+
+```bash
+git clone https://github.com/gikeross/Document_digitalization.git
+cd Document_digitalization
+```
+
+Install the Python dependencies required by `model.py`, including Flask, Google Cloud Vision, pandas, RAKE-NLTK and googlesearch.
+
+Google Cloud Vision also requires valid application credentials. The current project code references a local credential path, so update the `GOOGLE_APPLICATION_CREDENTIALS` configuration for your own environment before running the application.
+
+Start the Flask server:
+
+```bash
+python model.py
+```
+
+Then open the local Flask address in your browser and upload an image for processing.
+
+## Skills Demonstrated
+
+This project combines several parts of an end-to-end data application: API integration, OCR, natural-language processing, backend development, temporary file handling and frontend/backend communication.
+
+## Future Improvements
+
+Potential improvements include moving configuration into environment variables, adding a dependency file, improving error handling, expanding OCR evaluation, and deploying the application so it can be tested without a local setup.
