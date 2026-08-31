@@ -13,16 +13,11 @@ The repository includes example document images used to demonstrate the OCR work
 
 The application takes an uploaded document image and turns it into machine-readable text, OCR confidence metrics, ranked keywords and related search results.
 
-## Overview
+## User Experience
 
-The goal of this project is to make handwritten information easier to digitize, review, and explore. A user uploads an image through the web interface, and the backend processes it through an OCR and text-analysis pipeline.
+The frontend now includes drag-and-drop upload, client-side file validation, image preview, loading/success/error states, responsive result cards, clickable related links and a one-click copy action for extracted text.
 
-The application returns:
-
-- extracted text from the uploaded image
-- OCR confidence scores at block and paragraph level
-- ranked keywords identified with RAKE
-- related web-search results based on the extracted keywords
+Accepted formats are **PNG, JPG/JPEG and WEBP**, with an **8 MB** maximum upload size.
 
 ## Results
 
@@ -35,24 +30,13 @@ The completed prototype demonstrates an end-to-end document-processing workflow 
 5. uses those phrases to retrieve related search results;
 6. returns the processed information to the browser as structured JSON.
 
-The API now distinguishes common failure cases such as missing uploads, unsupported image types, files that are too large, images with no detected text, OCR-provider failures and unexpected server errors.
+The API distinguishes common failure cases such as missing uploads, unsupported image types, files that are too large, images with no detected text, OCR-provider failures and unexpected server errors.
 
 This makes the project a practical example of combining a cloud AI service with NLP and a web application layer. The repository does not currently include a formal OCR benchmark dataset, so the project should be viewed as a working application prototype rather than a measured comparison of OCR accuracy.
 
 ## Reliability and Testing
 
-The repository includes automated Flask API tests under `tests/`. They cover:
-
-- missing-file validation
-- unsupported file extensions
-- invalid MIME types
-- successful OCR-response formatting using mocks
-- no-text responses
-- OCR-provider failure handling
-
-A GitHub Actions workflow runs the test suite automatically on relevant pushes and pull requests.
-
-Run the tests locally with:
+The repository includes automated Flask API tests under `tests/` covering upload validation, successful mocked OCR responses, no-text responses and OCR-provider failure handling. A GitHub Actions workflow runs the suite automatically on relevant pushes and pull requests.
 
 ```bash
 pytest -q
@@ -65,21 +49,24 @@ pytest -q
 - **Google Cloud Vision** — document text detection / OCR
 - **RAKE-NLTK** — keyword extraction
 - **googlesearch** — related search-result retrieval
+- **Gunicorn** — production WSGI server
+- **Docker** — portable production runtime
 - **pytest** — automated API testing
 - **GitHub Actions** — continuous integration
-- **HTML / CSS / JavaScript** — user interface
+- **HTML / CSS / JavaScript** — responsive user interface
 
 ## How It Works
 
-1. The user uploads a PNG, JPG/JPEG, or WEBP image.
-2. Flask validates the filename, MIME type and maximum request size.
-3. The upload is stored in a temporary file.
-4. Google Cloud Vision performs document text detection.
-5. The application calculates average OCR confidence scores.
-6. RAKE extracts and ranks relevant phrases from the recognized text.
-7. The extracted keywords are used to retrieve related search results.
-8. The temporary upload is removed after processing.
-9. The processed information is returned to the frontend as JSON.
+1. The user selects or drops a supported image into the browser.
+2. Client-side JavaScript validates the file and displays a preview.
+3. Flask validates the filename, MIME type and maximum request size again server-side.
+4. The upload is stored in a temporary file.
+5. Google Cloud Vision performs document text detection.
+6. The application calculates average OCR confidence scores.
+7. RAKE extracts and ranks relevant phrases from the recognized text.
+8. The extracted keywords are used to retrieve related search results.
+9. The temporary upload is removed after processing.
+10. Results are rendered into responsive cards in the browser.
 
 ## Project Structure
 
@@ -89,17 +76,17 @@ document-digitalization/
 ├── requirements.txt       # Python and test dependencies
 ├── tests/                 # Flask API tests
 ├── .github/workflows/     # Continuous-integration workflow
-├── .gitignore             # Local, environment and credential exclusions
+├── Dockerfile             # Production container image
+├── .dockerignore          # Container build exclusions
+├── render.yaml            # Render deployment blueprint
 ├── templates/             # HTML templates
-├── static/                # Frontend assets and styling
+├── static/                # Frontend JavaScript and responsive styling
 ├── IMAGE_PRESENTATION/    # Example document images
 ├── FINAL_project.pptx     # Project presentation
 └── README.md
 ```
 
-## Running the Project Locally
-
-Clone the repository and create an isolated environment:
+## Running Locally
 
 ```bash
 git clone https://github.com/gikeross/document-digitalization.git
@@ -107,39 +94,43 @@ cd document-digitalization
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-```
-
-Google Cloud Vision requires authentication. Keep the service-account JSON file outside the repository and set its path in your shell:
-
-```bash
 export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/service-account.json"
-```
-
-Then start the Flask application:
-
-```bash
 python model.py
 ```
 
-Open the local Flask address shown in the terminal and upload an image for processing.
-
-To enable Flask debug mode during local development only:
+## Running with Docker
 
 ```bash
-export FLASK_DEBUG=true
-python model.py
+docker build -t document-digitalization .
+docker run --rm -p 8080:8080 \
+  -e GOOGLE_APPLICATION_CREDENTIALS_JSON="$(cat /path/to/service-account.json)" \
+  document-digitalization
 ```
+
+Then open `http://localhost:8080`. The production container runs the application through Gunicorn and exposes `/health` for platform health checks.
+
+## Cloud Deployment
+
+The repository is deployment-ready through the included `Dockerfile` and `render.yaml` blueprint. For a cloud deployment, configure the service-account JSON as a secret environment variable named:
+
+```text
+GOOGLE_APPLICATION_CREDENTIALS_JSON
+```
+
+Do **not** commit the credential file itself. The application parses the secret in memory and passes the credentials directly to Google Cloud Vision.
+
+For Render, connect this GitHub repository, create the service from the included blueprint, add `GOOGLE_APPLICATION_CREDENTIALS_JSON` as a secret, and deploy. Other Docker-capable platforms can use the same image and `/health` endpoint.
 
 ## Security and Repository Hygiene
 
-Credentials are not stored in source code. Local environment files, virtual environments, macOS metadata and common credential filenames are excluded through `.gitignore`.
+Credentials are not stored in source code. Local environment files, virtual environments, macOS metadata and common credential filenames are excluded through `.gitignore` and `.dockerignore`.
 
-If a service-account key has ever been committed to Git history, removing the file from the current branch is not enough: revoke that key in Google Cloud and create a new one.
+If a service-account key has ever been committed to Git history, revoke that key in Google Cloud and create a new one.
 
 ## Skills Demonstrated
 
-This project combines several parts of an end-to-end data application: API integration, OCR, natural-language processing, backend development, input validation, automated testing, continuous integration, temporary file handling, secure configuration and frontend/backend communication.
+This project combines API integration, OCR, natural-language processing, backend development, frontend UX, input validation, automated testing, continuous integration, Docker deployment, production WSGI serving, temporary file handling and secure configuration.
 
 ## Future Improvements
 
-The next useful improvements would be client-side validation and clearer frontend error messages, rate limiting for search requests, a formal OCR evaluation dataset, containerization and deployment so the application can be tested without a local setup.
+Useful next improvements include rate limiting for search requests, a formal OCR evaluation dataset, end-to-end browser tests and a public live-demo URL once a hosting account is connected.
