@@ -2,6 +2,8 @@
 
 A Flask-based web application that converts images of handwritten notes into structured digital text using Google Cloud Vision OCR. The application also extracts keywords from the recognized text and generates related search results.
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/gikeross/document-digitalization)
+
 ## Project Preview
 
 The repository includes example document images used to demonstrate the OCR workflow:
@@ -111,7 +113,7 @@ Then open `http://localhost:8080`. The production container runs the application
 
 ## Cloud Deployment
 
-The repository is deployment-ready through the included `Dockerfile` and `render.yaml` blueprint. For a cloud deployment, configure the service-account JSON as a secret environment variable named:
+The repository is deployment-ready through the included `Dockerfile` and `render.yaml` blueprint. The **Deploy to Render** button at the top opens this repository directly as a Render Blueprint deployment. Render supports public repositories directly and reads the included `render.yaml` configuration. Configure the service-account JSON as the secret environment variable:
 
 ```text
 GOOGLE_APPLICATION_CREDENTIALS_JSON
@@ -119,7 +121,7 @@ GOOGLE_APPLICATION_CREDENTIALS_JSON
 
 Do **not** commit the credential file itself. The application parses the secret in memory and passes the credentials directly to Google Cloud Vision.
 
-For Render, connect this GitHub repository, create the service from the included blueprint, add `GOOGLE_APPLICATION_CREDENTIALS_JSON` as a secret, and deploy. Other Docker-capable platforms can use the same image and `/health` endpoint.
+After reviewing the Blueprint in Render, enter the secret value, apply the deployment, and verify `/health` returns a successful response before testing OCR. Other Docker-capable platforms can use the same image and health endpoint.
 
 ## Security and Repository Hygiene
 
