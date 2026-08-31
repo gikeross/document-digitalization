@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: document-digitalization
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: GOOGLE_APPLICATION_CREDENTIALS_JSON
+        sync: false
