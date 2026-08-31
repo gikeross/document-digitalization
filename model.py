@@ -20,6 +20,11 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/health")
+def health():
+    return jsonify({"status": "ok"}), 200
+
+
 def validate_upload(uploaded_file):
     if uploaded_file is None or uploaded_file.filename == "":
         return "No file uploaded"
