@@ -1,85 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
-
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Image Digitalization</title>
-        <!-- Other meta tags and title -->
-        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
-        <style>
-            /* Import Montserrat font from Google Fonts */
-            @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
-    
-            /* Apply Montserrat to the body */
-            body {
-                font-family: 'Montserrat', sans-serif;
-            }
-    
-            /* Apply Montserrat to headings */
-            h1, h2, h3, h4, h5, h6 {
-                font-family: 'Montserrat', sans-serif;
-            }
-        </style>
-
-    </head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Digitize handwritten notes with OCR and keyword extraction.">
+    <title>Read & Search Notes</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
 <body>
-    <div id="container_body" class="container">
+    <main class="page-shell">
+        <section class="hero">
+            <p class="eyebrow">OCR + NLP document assistant</p>
+            <h1>Read & Search Notes</h1>
+            <p class="hero-copy">Turn handwritten or printed notes into searchable digital text, confidence metrics, ranked keywords and related links.</p>
+        </section>
 
-         <div id="container_head" class="container">
-            <header>
-                <div class="header-content">
-                    <img class ='image_head' src="/static/image_test/left_image.jpeg">
-                    <img class ='image_head' src="/static/image_test/right_image.jpeg">
-                    <h1>Read&Search-Notes</h1>
-                    
-                </div>
-                <p class="description">
-                    This IA will transform your handwritten notes into tidy texts, ready for your research
-                </p>
-                <p class="description">
-                    Upload a picture (.jpg & .jpeg) and check it out!
-                </p>
-            </header>
-        </div>
-        <h2>Upload Image</h2>
-        <form id="uploadForm" method="post" enctype="multipart/form-data">
-            <div class="file-import">
-                <label class="file-upload"><input type="file" id="imageFile" name="imageFile"></label>
-                <button type="button" onclick="uploadImage()">Upload</button>
-            </div>  
-        </form>
-
-        <div id="imageContainer"></div> <!-- This div will contain the uploaded image -->
-
-        <div id="container_kpi" class="container">
-            <h3 class="box-title">Text</h3>
-                <div id="outputContainer" class="box">
-                <ul id="outputList"></ul>
+        <section class="card upload-card" aria-labelledby="upload-title">
+            <div>
+                <h2 id="upload-title">Upload a document</h2>
+                <p class="muted">PNG, JPG, JPEG or WEBP · maximum 8 MB</p>
             </div>
-        </div>
-        <div id="container_kpi" class="container">
-        <h3 class="box-title">Keywords</h3>
-            <div id="keywordsContainer" class="box">
-            <ul id="outputList"></ul>
-        </div>
-            <h3 class="box-title">Rating</h3>
-                <div id="ratingContainer" class="box">
-        </div>
-        </div>
 
-        <div>
-        <h3>Search Links</h3>
-            <div id="searchContainer" class="box">
-        </div>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <label class="drop-zone" for="imageFile" id="dropZone">
+                    <span class="drop-title">Choose an image</span>
+                    <span class="drop-copy" id="fileName">or drag and drop it here</span>
+                    <input type="file" id="imageFile" name="imageFile" accept="image/png,image/jpeg,image/webp">
+                </label>
+                <button id="uploadButton" type="submit">Process document</button>
+            </form>
 
-        </div>
-        <h3>Rate of Confidence</h3>
-            <div id="confidenceContainer" class="box">
-        </div>
+            <div id="statusMessage" class="status" role="status" aria-live="polite"></div>
+        </section>
 
-        <script src="{{ url_for('static', filename='script.js') }}"></script> <!-- Include the JavaScript file -->
-    </div>
+        <section id="previewSection" class="card hidden">
+            <div class="section-heading">
+                <h2>Preview</h2>
+                <span id="previewMeta" class="muted"></span>
+            </div>
+            <div id="imageContainer" class="image-preview"></div>
+        </section>
+
+        <section id="resultsSection" class="results hidden" aria-live="polite">
+            <article class="card result-card text-card">
+                <div class="section-heading">
+                    <h2>Extracted text</h2>
+                    <button class="secondary-button" id="copyButton" type="button">Copy text</button>
+                </div>
+                <div id="outputContainer" class="output-text"></div>
+            </article>
+
+            <div class="result-grid">
+                <article class="card result-card">
+                    <h2>Confidence</h2>
+                    <div id="confidenceContainer"></div>
+                </article>
+
+                <article class="card result-card">
+                    <h2>Keywords</h2>
+                    <div id="keywordsContainer"></div>
+                </article>
+
+                <article class="card result-card">
+                    <h2>Keyword scores</h2>
+                    <div id="ratingContainer"></div>
+                </article>
+            </div>
+
+            <article class="card result-card">
+                <h2>Related links</h2>
+                <div id="searchContainer"></div>
+            </article>
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
-
 </html>
