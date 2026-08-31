@@ -2,6 +2,17 @@
 
 A Flask-based web application that converts images of handwritten notes into structured digital text using Google Cloud Vision OCR. The application also extracts keywords from the recognized text and generates related search results.
 
+## Project Preview
+
+The repository includes example document images used to demonstrate the OCR workflow:
+
+<p align="center">
+  <img src="IMAGE_PRESENTATION/example1.jpg" alt="Example handwritten document used by the OCR application" width="45%" />
+  <img src="IMAGE_PRESENTATION/random_example.jpg" alt="Second example document used by the OCR application" width="45%" />
+</p>
+
+The application takes an uploaded document image and turns it into machine-readable text, OCR confidence metrics, ranked keywords and related search results.
+
 ## Overview
 
 The goal of this project is to make handwritten information easier to digitize, review, and explore. A user uploads an image through the web interface, and the backend processes it through an OCR and text-analysis pipeline.
@@ -12,6 +23,18 @@ The application returns:
 - OCR confidence scores at block and paragraph level
 - ranked keywords identified with RAKE
 - related web-search results based on the extracted keywords
+
+## Results
+
+The completed prototype demonstrates an end-to-end document-processing workflow rather than OCR in isolation. For each successfully processed upload, the backend:
+
+1. extracts document text with Google Cloud Vision;
+2. calculates average OCR confidence at block and paragraph level;
+3. identifies and ranks meaningful phrases with RAKE;
+4. uses those phrases to retrieve related search results;
+5. returns the processed information to the browser as structured JSON.
+
+This makes the project a practical example of combining a cloud AI service with NLP and a web application layer. The repository does not currently include a formal OCR benchmark dataset, so the project should be viewed as a working application prototype rather than a measured comparison of OCR accuracy.
 
 ## Tech Stack
 
@@ -42,7 +65,7 @@ document-digitalization/
 ├── .gitignore             # Local, environment and credential exclusions
 ├── templates/             # HTML templates
 ├── static/                # Frontend assets and styling
-├── IMAGE_PRESENTATION/    # Presentation assets
+├── IMAGE_PRESENTATION/    # Example document images
 ├── FINAL_project.pptx     # Project presentation
 └── README.md
 ```
@@ -92,4 +115,4 @@ This project combines several parts of an end-to-end data application: API integ
 
 ## Future Improvements
 
-Potential improvements include stronger file-type validation, automated tests, improved frontend error handling, rate limiting for search requests, containerization and deployment so the application can be tested without a local setup.
+Potential improvements include stronger file-type validation, automated tests, improved frontend error handling, rate limiting for search requests, a formal OCR evaluation dataset, containerization and deployment so the application can be tested without a local setup.
