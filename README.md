@@ -28,13 +28,35 @@ The application returns:
 
 The completed prototype demonstrates an end-to-end document-processing workflow rather than OCR in isolation. For each successfully processed upload, the backend:
 
-1. extracts document text with Google Cloud Vision;
-2. calculates average OCR confidence at block and paragraph level;
-3. identifies and ranks meaningful phrases with RAKE;
-4. uses those phrases to retrieve related search results;
-5. returns the processed information to the browser as structured JSON.
+1. validates the uploaded image type and enforces an 8 MB size limit;
+2. extracts document text with Google Cloud Vision;
+3. calculates average OCR confidence at block and paragraph level;
+4. identifies and ranks meaningful phrases with RAKE;
+5. uses those phrases to retrieve related search results;
+6. returns the processed information to the browser as structured JSON.
+
+The API now distinguishes common failure cases such as missing uploads, unsupported image types, files that are too large, images with no detected text, OCR-provider failures and unexpected server errors.
 
 This makes the project a practical example of combining a cloud AI service with NLP and a web application layer. The repository does not currently include a formal OCR benchmark dataset, so the project should be viewed as a working application prototype rather than a measured comparison of OCR accuracy.
+
+## Reliability and Testing
+
+The repository includes automated Flask API tests under `tests/`. They cover:
+
+- missing-file validation
+- unsupported file extensions
+- invalid MIME types
+- successful OCR-response formatting using mocks
+- no-text responses
+- OCR-provider failure handling
+
+A GitHub Actions workflow runs the test suite automatically on relevant pushes and pull requests.
+
+Run the tests locally with:
+
+```bash
+pytest -q
+```
 
 ## Tech Stack
 
@@ -43,25 +65,30 @@ This makes the project a practical example of combining a cloud AI service with 
 - **Google Cloud Vision** — document text detection / OCR
 - **RAKE-NLTK** — keyword extraction
 - **googlesearch** — related search-result retrieval
+- **pytest** — automated API testing
+- **GitHub Actions** — continuous integration
 - **HTML / CSS / JavaScript** — user interface
 
 ## How It Works
 
-1. The user uploads an image containing handwritten or printed notes.
-2. Flask stores the upload in a temporary file.
-3. Google Cloud Vision performs document text detection.
-4. The application calculates average OCR confidence scores.
-5. RAKE extracts and ranks relevant phrases from the recognized text.
-6. The extracted keywords are used to retrieve related search results.
-7. The temporary upload is removed after processing.
-8. The processed information is returned to the frontend as JSON.
+1. The user uploads a PNG, JPG/JPEG, or WEBP image.
+2. Flask validates the filename, MIME type and maximum request size.
+3. The upload is stored in a temporary file.
+4. Google Cloud Vision performs document text detection.
+5. The application calculates average OCR confidence scores.
+6. RAKE extracts and ranks relevant phrases from the recognized text.
+7. The extracted keywords are used to retrieve related search results.
+8. The temporary upload is removed after processing.
+9. The processed information is returned to the frontend as JSON.
 
 ## Project Structure
 
 ```text
 document-digitalization/
-├── model.py               # Flask backend, OCR and keyword-processing logic
-├── requirements.txt       # Python dependencies
+├── model.py               # Flask backend, validation, OCR and NLP logic
+├── requirements.txt       # Python and test dependencies
+├── tests/                 # Flask API tests
+├── .github/workflows/     # Continuous-integration workflow
 ├── .gitignore             # Local, environment and credential exclusions
 ├── templates/             # HTML templates
 ├── static/                # Frontend assets and styling
@@ -111,8 +138,8 @@ If a service-account key has ever been committed to Git history, removing the fi
 
 ## Skills Demonstrated
 
-This project combines several parts of an end-to-end data application: API integration, OCR, natural-language processing, backend development, temporary file handling, secure configuration and frontend/backend communication.
+This project combines several parts of an end-to-end data application: API integration, OCR, natural-language processing, backend development, input validation, automated testing, continuous integration, temporary file handling, secure configuration and frontend/backend communication.
 
 ## Future Improvements
 
-Potential improvements include stronger file-type validation, automated tests, improved frontend error handling, rate limiting for search requests, a formal OCR evaluation dataset, containerization and deployment so the application can be tested without a local setup.
+The next useful improvements would be client-side validation and clearer frontend error messages, rate limiting for search requests, a formal OCR evaluation dataset, containerization and deployment so the application can be tested without a local setup.
