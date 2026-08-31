@@ -1,0 +1,15 @@
+.git
+.github
+.venv
+venv
+myenv
+__pycache__
+.pytest_cache
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+.env
+*.json
+FINAL_project.pptx
+IMAGE_PRESENTATION
