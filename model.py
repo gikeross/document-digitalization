@@ -1,81 +1,70 @@
-import os
 import io
+import os
 import tempfile
-from flask import Flask, request, jsonify, render_template
-from rake_nltk import Rake
-import pandas as pd
-from googlesearch import search
 
-# Import Vision API-related modules
+from flask import Flask, jsonify, render_template, request
 from google.cloud import vision
-from google.cloud.vision_v1 import types
+from googlesearch import search
+from rake_nltk import Rake
 
-# Initialize Flask app
-app = Flask(__name__, static_url_path='/static')
+app = Flask(__name__, static_url_path="/static")
 
-# Google Cloud Vision uses Application Default Credentials.
-# For local development, set GOOGLE_APPLICATION_CREDENTIALS in your shell
-# to the path of your service-account JSON file instead of storing it in code.
-if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
-    print(
-        'Warning: GOOGLE_APPLICATION_CREDENTIALS is not set. '
-        'Google Cloud Vision authentication must be configured before OCR requests can succeed.'
-    )
 
-# Initialize Google Vision client
-client = vision.ImageAnnotatorClient()
-
-# Define route for the index page
-@app.route('/')
+@app.route("/")
 def index():
-    return render_template('index.html')
+    return render_template("index.html")
 
-# Define endpoint for image text recognition
-@app.route('/image_text_recognition', methods=['POST'])
+
+@app.route("/image_text_recognition", methods=["POST"])
 def image_text_recognition():
-    if 'imageFile' not in request.files:
+    uploaded_file = request.files.get("imageFile")
+    if uploaded_file is None or uploaded_file.filename == "":
         return jsonify({"error": "No file uploaded"}), 400
 
-    uploaded_file = request.files['imageFile']
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            uploaded_file.save(temp_file.name)
+            temp_path = temp_file.name
 
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-        uploaded_file.save(temp_file.name)
-        file_path = temp_file.name
+        doc_text, avg_block_confidence, avg_paragraph_confidence = recognize_text(temp_path)
 
-    doc_text, avg_block_confidence, avg_paragraph_confidence = recognize_text(file_path)
+        if not doc_text:
+            return jsonify({"error": "No text detected"}), 400
 
-    if not doc_text:
-        return jsonify({"error": "No text detected"}), 400
+        rating_list, keywords_list = keyword_classifier(doc_text)
+        all_results = search_results(keywords_list)
 
-    rating_list, keywords_list = keyword_classifier(doc_text)
-    all_results = search_results(keywords_list)
-    matching_result = matching_index(file_path)
-
-    return jsonify({
-        "text": doc_text,
-        "matching_result": matching_result,
-        "avg_block_confidence": round(avg_block_confidence * 100, 2),
-        "avg_paragraph_confidence": round(avg_paragraph_confidence * 100, 2),
-        "rating": rating_list,
-        "keywords": keywords_list,
-        "search": all_results
-    })
+        return jsonify({
+            "text": doc_text,
+            "avg_block_confidence": round(avg_block_confidence * 100, 2),
+            "avg_paragraph_confidence": round(avg_paragraph_confidence * 100, 2),
+            "rating": rating_list,
+            "keywords": keywords_list,
+            "search": all_results,
+        })
+    except Exception as exc:
+        app.logger.exception("Image processing failed")
+        return jsonify({"error": "Image processing failed", "details": str(exc)}), 500
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)
 
 
 def recognize_text(file_path):
-    with io.open(file_path, 'rb') as image_file:
+    client = vision.ImageAnnotatorClient()
+
+    with io.open(file_path, "rb") as image_file:
         content = image_file.read()
 
-    image = types.Image(content=content)
-    feature = vision.Feature(type_=vision.Feature.Type.DOCUMENT_TEXT_DETECTION)
-    request = vision.AnnotateImageRequest(image=image, features=[feature])
-    response = client.annotate_image(request=request)
+    image = vision.Image(content=content)
+    response = client.document_text_detection(image=image)
 
     if response.error.message:
-        return None, None, None
+        raise RuntimeError(response.error.message)
 
-    total_block_confidence = 0
-    total_paragraph_confidence = 0
+    total_block_confidence = 0.0
+    total_paragraph_confidence = 0.0
     num_blocks = 0
     num_paragraphs = 0
 
@@ -87,42 +76,26 @@ def recognize_text(file_path):
                 total_paragraph_confidence += paragraph.confidence
                 num_paragraphs += 1
 
-    avg_block_confidence = total_block_confidence / num_blocks if num_blocks > 0 else 0
-    avg_paragraph_confidence = total_paragraph_confidence / num_paragraphs if num_paragraphs > 0 else 0
+    avg_block_confidence = total_block_confidence / num_blocks if num_blocks else 0.0
+    avg_paragraph_confidence = (
+        total_paragraph_confidence / num_paragraphs if num_paragraphs else 0.0
+    )
 
-    doc_text = response.text_annotations[0].description if response.text_annotations else ""
-
-    return doc_text, avg_block_confidence, avg_paragraph_confidence
-
-
-def matching_index(file_path):
-    with io.open(file_path, 'rb') as image_file:
-        content = image_file.read()
-
-    image = vision.Image(content=content)
-    feature = vision.Feature(type_=vision.Feature.Type.DOCUMENT_TEXT_DETECTION)
-    request = vision.AnnotateImageRequest(image=image, features=[feature])
-    response = client.annotate_image(request=request)
-
-    print(response)
-
-    for page in response.full_text_annotation.pages:
-        print("Page:")
-        print(page)
-
-    return None, None
+    return response.full_text_annotation.text, avg_block_confidence, avg_paragraph_confidence
 
 
 def keyword_classifier(doc_text):
-    r = Rake()
-    r.extract_keywords_from_text(doc_text)
-    keywords_list = []
-    rating_list = []
-    for rating, keywords in r.get_ranked_phrases_with_scores():
+    rake = Rake()
+    rake.extract_keywords_from_text(doc_text)
+
+    ratings = []
+    keywords = []
+    for rating, phrase in rake.get_ranked_phrases_with_scores():
         if rating > 1:
-            keywords_list.append(keywords)
-            rating_list.append(round(rating, 0))
-    return rating_list, keywords_list
+            ratings.append(round(rating, 0))
+            keywords.append(phrase)
+
+    return ratings, keywords
 
 
 def search_results(keywords_list, num_results=1):
@@ -131,11 +104,12 @@ def search_results(keywords_list, num_results=1):
         keyword_results = []
         for result in search(keyword, num_results=num_results):
             keyword_results.append(result)
-            if len(keyword_results) == num_results:
+            if len(keyword_results) >= num_results:
                 break
         all_results.append(keyword_results)
     return all_results
 
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    debug = os.getenv("FLASK_DEBUG", "false").lower() == "true"
+    app.run(debug=debug)
