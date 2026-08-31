@@ -1,10 +1,12 @@
 import io
+import json
 import os
 import tempfile
 from pathlib import Path
 
 from flask import Flask, jsonify, render_template, request
 from google.cloud import vision
+from google.oauth2 import service_account
 from googlesearch import search
 from rake_nltk import Rake
 
@@ -85,8 +87,24 @@ def image_text_recognition():
             os.remove(temp_path)
 
 
+def get_vision_client():
+    """Create a Vision client from a cloud secret or Application Default Credentials."""
+    credentials_json = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+    if credentials_json:
+        try:
+            credentials_info = json.loads(credentials_json)
+            credentials = service_account.Credentials.from_service_account_info(
+                credentials_info
+            )
+            return vision.ImageAnnotatorClient(credentials=credentials)
+        except (json.JSONDecodeError, ValueError, KeyError) as exc:
+            raise RuntimeError("Invalid Google Cloud credential configuration.") from exc
+
+    return vision.ImageAnnotatorClient()
+
+
 def recognize_text(file_path):
-    client = vision.ImageAnnotatorClient()
+    client = get_vision_client()
 
     with io.open(file_path, "rb") as image_file:
         content = image_file.read()
