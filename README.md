@@ -36,7 +36,7 @@ The application returns:
 ## Project Structure
 
 ```text
-Document_digitalization/
+document-digitalization/
 ├── model.py               # Flask backend, OCR and keyword-processing logic
 ├── requirements.txt       # Python dependencies
 ├── .gitignore             # Local, environment and credential exclusions
@@ -52,8 +52,8 @@ Document_digitalization/
 Clone the repository and create an isolated environment:
 
 ```bash
-git clone https://github.com/gikeross/Document_digitalization.git
-cd Document_digitalization
+git clone https://github.com/gikeross/document-digitalization.git
+cd document-digitalization
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
