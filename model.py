@@ -1,6 +1,7 @@
 import io
 import os
 import tempfile
+from pathlib import Path
 
 from flask import Flask, jsonify, render_template, request
 from google.cloud import vision
@@ -8,6 +9,10 @@ from googlesearch import search
 from rake_nltk import Rake
 
 app = Flask(__name__, static_url_path="/static")
+app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024  # 8 MB
+
+ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
+ALLOWED_MIME_TYPES = {"image/png", "image/jpeg", "image/webp"}
 
 
 @app.route("/")
@@ -15,22 +20,43 @@ def index():
     return render_template("index.html")
 
 
+def validate_upload(uploaded_file):
+    if uploaded_file is None or uploaded_file.filename == "":
+        return "No file uploaded"
+
+    extension = Path(uploaded_file.filename).suffix.lower()
+    if extension not in ALLOWED_EXTENSIONS:
+        return "Unsupported file type. Use PNG, JPG, JPEG, or WEBP."
+
+    if uploaded_file.mimetype not in ALLOWED_MIME_TYPES:
+        return "Unsupported MIME type. Upload a valid image file."
+
+    return None
+
+
+@app.errorhandler(413)
+def file_too_large(_error):
+    return jsonify({"error": "File too large. Maximum upload size is 8 MB."}), 413
+
+
 @app.route("/image_text_recognition", methods=["POST"])
 def image_text_recognition():
     uploaded_file = request.files.get("imageFile")
-    if uploaded_file is None or uploaded_file.filename == "":
-        return jsonify({"error": "No file uploaded"}), 400
+    validation_error = validate_upload(uploaded_file)
+    if validation_error:
+        return jsonify({"error": validation_error}), 400
 
     temp_path = None
     try:
-        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        suffix = Path(uploaded_file.filename).suffix.lower()
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
             uploaded_file.save(temp_file.name)
             temp_path = temp_file.name
 
         doc_text, avg_block_confidence, avg_paragraph_confidence = recognize_text(temp_path)
 
-        if not doc_text:
-            return jsonify({"error": "No text detected"}), 400
+        if not doc_text or not doc_text.strip():
+            return jsonify({"error": "No text detected in the uploaded image."}), 422
 
         rating_list, keywords_list = keyword_classifier(doc_text)
         all_results = search_results(keywords_list)
@@ -43,9 +69,12 @@ def image_text_recognition():
             "keywords": keywords_list,
             "search": all_results,
         })
-    except Exception as exc:
+    except RuntimeError as exc:
+        app.logger.warning("OCR provider error: %s", exc)
+        return jsonify({"error": "OCR service could not process the image."}), 502
+    except Exception:
         app.logger.exception("Image processing failed")
-        return jsonify({"error": "Image processing failed", "details": str(exc)}), 500
+        return jsonify({"error": "Image processing failed unexpectedly."}), 500
     finally:
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
